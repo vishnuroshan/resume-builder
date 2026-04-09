@@ -1,5 +1,5 @@
 import ResumeEditor from "@/components/Editor/ResumeEditor";
-import RawPreview from "@/components/Preview/RawPreview";
+import ResumePreview from "@/components/Preview/ResumePreview";
 
 export default function Home() {
   return (
@@ -8,7 +8,7 @@ export default function Home() {
         <ResumeEditor />
       </div>
       <div className="flex-1">
-        <RawPreview />
+        <ResumePreview />
       </div>
     </div>
   );
