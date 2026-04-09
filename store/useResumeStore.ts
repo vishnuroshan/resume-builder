@@ -10,10 +10,12 @@ import type {
   ResumeHeader,
   WorkExperience,
   Education,
+  ResumeContent,
 } from "@/types/resume.types";
 
 const initialData: ResumeData = {
   document: null,
+  resumeContent: { content: null } satisfies ResumeContent,
   isDirty: false,
 };
 
@@ -46,14 +48,20 @@ export const useResumeStore = create<ResumeState>()(
           return { document: { ...state.document, educations }, isDirty: true };
         }),
 
+      setContent: (newContent: Record<string, unknown>) =>
+        set({ resumeContent: { content: newContent } }),
+
       markDirty: () => set({ isDirty: true }),
 
       markClean: () => set({ isDirty: false }),
     }),
     {
-      // Only track the resume document in undo history — exclude actions and
-      // the isDirty flag to avoid polluting the undo tree.
-      partialize: (state) => ({ document: state.document }),
+      // Only track the resume document and content in undo history — exclude
+      // actions and the isDirty flag to avoid polluting the undo tree.
+      partialize: (state) => ({
+        document: state.document,
+        resumeContent: state.resumeContent,
+      }),
     },
   ),
 );
@@ -62,7 +70,9 @@ export const useResumeStore = create<ResumeState>()(
 // Accessing .temporal.getState() directly is non-reactive. This hook makes
 // pastStates / futureStates trigger re-renders when consumed in components.
 
-type TemporalResumeState = TemporalState<Pick<ResumeState, "document">>;
+type TemporalResumeState = TemporalState<
+  Pick<ResumeState, "document" | "resumeContent">
+>;
 
 export function useTemporalStore(): TemporalResumeState;
 export function useTemporalStore<T>(

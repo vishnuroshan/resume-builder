@@ -47,8 +47,13 @@ export interface ResumeDocument {
 
 // ─── Zustand store shape ──────────────────────────────────────────────────────
 
+export interface ResumeContent {
+  content: Record<string, unknown> | null;
+}
+
 export interface ResumeData {
   document: ResumeDocument | null;
+  resumeContent: ResumeContent;
   isDirty: boolean;
 }
 
@@ -57,6 +62,7 @@ export interface ResumeActions {
   setHeader: (header: ResumeHeader) => void;
   setWorkExperiences: (workExperiences: WorkExperience[]) => void;
   setEducations: (educations: Education[]) => void;
+  setContent: (newContent: Record<string, unknown>) => void;
   markDirty: () => void;
   markClean: () => void;
 }
