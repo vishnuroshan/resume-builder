@@ -1,0 +1,40 @@
+{
+  "name": "resume-builder",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@tiptap/pm": "^3.22.3",
+    "@tiptap/react": "^3.22.3",
+    "@tiptap/starter-kit": "^3.22.3",
+    "mongoose": "^9.4.1",
+    "mongoose-history-trace": "^2.1.0",
+    "next": "16.2.3",
+    "pdf-parse": "^2.4.5",
+    "postcss": "^8.5.9",
+    "puppeteer": "^24.40.0",
+    "react": "19.2.4",
+    "react-aria-components": "^1.16.0",
+    "react-dom": "19.2.4",
+    "sanitize-html": "^2.17.2",
+    "zundo": "^2.3.0",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.3",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
