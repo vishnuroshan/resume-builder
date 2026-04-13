@@ -2,7 +2,18 @@
 
 ## Project Context
 
-You are assisting a senior engineer in building a production-grade, ATS-compatible resume builder. The application features a live WYSIWYG editor synced to a visual preview, supported by session-based state management and permanent database versioning.
+You are assisting a senior engineer in building a production-grade, ATS-compatible resume builder. The application is a **structured, section-based form editor** synced to a live semantic preview, supported by session-based state management and permanent database versioning.
+
+The editor is **not** a single free-form Tiptap canvas. It is composed of fixed, typed sections — each with its own schema, UI controls, and Tiptap configuration. The fixed section order (never reorderable in the current scope) is:
+
+1. **Contact Info** — always present, never removable; plain structured inputs
+2. **Objective** — paragraphs and inline marks only; no headings, no lists
+3. **Work Experience** — per entry: company/designation + years + top-level bullet list + optional named project sub-sections (each with their own bullet list)
+4. **Education** — per entry: institution/programme + years + optional plain-text description
+5. **Skills** — per entry: name + numeric level (0–100), edited via slider with number-input fallback; rendered in preview as a CSS-only progress bar with the skill name in the DOM for ATS
+6. **Projects** — per entry: name + optional subtitle + Tiptap bullet list
+7. **Certifications** — per entry: name + optional issuer + optional year; plain inputs only
+8. **Custom Sections** — user-defined; each has a section title, a `bodyType` of `'bullets'` or `'paragraphs'` (set once per section, applies to all entries), and an array of entries (optional title, optional subtitle, Tiptap body restricted to the section's `bodyType`)
 
 ## Technology Stack
 
@@ -21,46 +32,56 @@ You are assisting a senior engineer in building a production-grade, ATS-compatib
 - Components: PascalCase (e.g., `ResumePreview.tsx`)
 - Hooks: camelCase with `use` prefix (e.g., `useResumeStore.ts`)
 - Types: descriptive with `.types.ts` suffix (e.g., `resume.types.ts`). Types must be explicitly exported and imported to prevent global namespace pollution.
+- Section editor components live under `components/Editor/sections/` (e.g., `ExperienceEditor.tsx`)
 
 ## Architecture & Implementation Rules
 
-### 1. Tiptap & State Integration
+### 1. Section-Based Data Model
 
-- Use the Tiptap React `useEditor` hook.
-- Stick to standard extensions to ensure the editor outputs clean, structured JSON. Avoid complex custom ProseMirror Node Views unless absolutely necessary.
-- Sync Tiptap's JSON output directly with the Zustand store.
-- Do not mutate Zustand state directly. Use setter functions to ensure the `zundo` middleware correctly tracks the undo/redo history tree.
+- Every section has a strict TypeScript interface stored in `types/resume.types.ts` and shared across Zustand, Mongoose models, and API routes.
+- The Zustand store holds a single `ResumeDocument | null`. There is one targeted setter per section (e.g., `setObjective`, `setExperience`). There is no generic `setContent` action.
+- `ResumeEditor.tsx` is a pure orchestrator: it renders section editor components in fixed DOM order and holds no Tiptap instance of its own.
 
-### 2. PDF Generation & ATS Compliance
+### 2. Tiptap & State Integration
+
+- Each section that requires rich text gets its own `useEditor` instance with the minimum set of extensions needed for that section's constraints.
+- **Objective**: disable `Heading`, `BulletList`, `OrderedList`, `ListItem`, `Blockquote`, `CodeBlock`, `HorizontalRule` in StarterKit.
+- **Experience / Projects / Custom (bullets)**: enable bullet lists; disable headings, ordered lists.
+- **Custom (paragraphs)**: disable all list and heading nodes.
+- Sync each editor's `onUpdate` JSON directly to its section setter. Do not mutate Zustand state directly.
+- The global undo/redo bar (`EditorToolbar.tsx`) calls `useResumeStore.temporal.getState().undo/redo()`. Each section editor's `useEffect` listens to its slice of the store and calls `editor.commands.setContent(...)` only when the stored JSON diverges from the editor's current JSON (undo/redo sync guard).
+
+### 3. PDF Generation & ATS Compliance
 
 - PDF rendering must be isolated to a hidden Next.js route that renders pure HTML and CSS without the builder UI.
-- The HTML source order on the render route must strictly follow a logical, linear reading order (Top to bottom: Header, Experience, Education) to guarantee `pdf-parse` extracts text correctly for ATS compatibility.
-- Achieve visual layouts (e.g., sidebars) using CSS Grid or Flexbox, not by altering the DOM order.
-- Puppeteer logic must be isolated in a dedicated service file, taking a URL and returning a PDF buffer.
+- The HTML source order on the render route must strictly follow the fixed section order above to guarantee `pdf-parse` extracts text correctly for ATS.
+- Skills must be rendered as `<span>SkillName – 80%</span>` text in the DOM with a separate CSS-only visual bar; never use `<progress>` (ATS-unfriendly).
+- Achieve visual layouts using CSS Grid or Flexbox only — never alter DOM order.
+- Puppeteer logic must be isolated in `lib/pdfService.ts`.
 
-### 3. Database & Versioning
+### 4. Database & Versioning
 
 - Manual save actions trigger a database update.
-- Map the Tiptap JSON output to strict Mongoose schemas.
-- Ensure `mongoose-history-trace` is configured to capture a full document snapshot upon manual save.
+- Map every section interface to strict Mongoose schemas.
+- Ensure `mongoose-history-trace` captures a full document snapshot on every manual save.
 
-### 4. UI & Styling
+### 5. UI & Styling
 
 - **Component Abstraction:** Build base UI elements by wrapping React Aria headless primitives with inline Tailwind classes.
-- **No `@apply` Directive:** Do not use Tailwind's `@apply` to create custom CSS classes. Styling must remain exclusively as inline utility classes to avoid bundle bloat and maintain colocation.
+- **No `@apply` Directive:** Do not use Tailwind's `@apply`. Styling must remain exclusively as inline utility classes.
 - **Accessibility:** Rely entirely on React Aria for complex DOM attributes, focus management, and keyboard navigation.
-- **Theming:** Utilize Tailwind's `@theme` directive in CSS to configure global design tokens (colors, fonts, breakpoints) for easy future UI upgrades.
+- **Theming:** Utilize Tailwind's `@theme` directive in CSS to configure global design tokens (colors, fonts, breakpoints).
 
-### 5. Clean Code & Engineering Principles
+### 6. Clean Code & Engineering Principles
 
-- **YAGNI (You Aren't Gonna Need It):** Do not preemptively build abstractions, generic wrappers, or features for hypothetical future use cases. Write code strictly for the exact requirements requested.
-- **KISS (Keep It Simple, Stupid):** Prioritize readability and straightforward logic. Do not over-engineer solutions or use obscure language features when a standard approach works.
-- **Guard Clauses & Early Returns:** Handle errors, edge cases, and invalid states at the top of functions and return early. Keep the "happy path" un-indented at the bottom of the function.
-- **Single Level of Abstraction (SLA):** Functions must do one thing at one level of abstraction. Do not mix high-level business logic with low-level data parsing or DOM manipulation in the same block. Extract lower-level operations into well-named utility functions.
-- **Explanatory Variables & Decomposing Conditionals:** Do not write complex, multi-condition logic directly inside `if()` statements. Extract the logic into well-named, explanatory boolean variables (e.g., `const isValidWorkExperience = hasTitle && hasCompany && hasDates;`).
+- **YAGNI:** Do not preemptively build abstractions for hypothetical future use cases.
+- **KISS:** Prioritize readability. Do not over-engineer.
+- **Guard Clauses & Early Returns:** Handle errors and invalid states at the top of functions.
+- **Single Level of Abstraction (SLA):** Functions must do one thing at one level of abstraction. Extract lower-level operations into well-named utilities.
+- **Explanatory Variables:** Extract complex conditions into named booleans (e.g., `const isCurrentRole = entry.endYear === null`).
 
-### 6. Code Quality & Type Safety
+### 7. Code Quality & Type Safety
 
-- Enforce strict TypeScript. The `any` type is strictly forbidden. Use `unknown` and apply type narrowing.
-- Create a shared `types` directory. Core data structures (e.g., ResumeDocument, WorkExperience) must share interfaces across Zustand, Mongoose models, and API routes.
-- React components must remain primarily presentational. Offload complex data transformations to Zustand actions or isolated utility functions.
+- Enforce strict TypeScript. The `any` type is strictly forbidden. Use `unknown` and type narrowing.
+- Types in `types/resume.types.ts` are the single source of truth shared across Zustand, Mongoose, and API routes.
+- React components must remain primarily presentational. Offload data transformations to Zustand actions or isolated utility functions.
