@@ -37,8 +37,8 @@
 - [x] Create `components/Editor/sections/CustomSectionEditor.tsx` — `CustomBodyEditor` with bodyType-conditional StarterKit config; `bodyType` toggle (bullets/paragraphs); add/remove sections and entries; calls `setCustomSections`.
 - [x] Simplify `components/Editor/EditorToolbar.tsx` to only undo/redo; `onUndo`/`onRedo` props; `canUndo`/`canRedo` from `useTemporalStore`.
 - [x] Wrap `ResumeEditor` in `EditorErrorBoundary` (class component) to prevent full app crash.
-- [ ] Add `sanitize-html` paste handlers to each Tiptap section editor to clean external content on paste.
-- [ ] Add keyboard shortcuts (Ctrl+Z / Ctrl+Y) wired to `useTemporalStore` undo/redo.
+- [x] Add `sanitize-html` paste handlers to each Tiptap section editor to clean external content on paste.
+- [x] Add keyboard shortcuts (Ctrl+Z / Ctrl+Y) wired to `useTemporalStore` undo/redo.
 
 ## Milestone 4: Live Preview & ATS Compliance
 

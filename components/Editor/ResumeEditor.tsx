@@ -30,6 +30,26 @@ export default function ResumeEditor() {
     }
   }, [document]);
 
+  // Global keyboard shortcuts for undo / redo.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const isMac = navigator.platform.toUpperCase().includes("MAC");
+      const modifier = isMac ? e.metaKey : e.ctrlKey;
+      if (!modifier) return;
+
+      if (e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
+        e.preventDefault();
+        handleRedo();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   if (document === null) return null;
 
   return (

@@ -5,6 +5,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import type { JSONContent } from "@tiptap/react";
 import { useResumeStore } from "@/store/useResumeStore";
+import { sanitizePastedHtml } from "@/lib/sanitizePaste";
 
 export default function ObjectiveEditor() {
   const objective = useResumeStore(
@@ -27,6 +28,7 @@ export default function ObjectiveEditor() {
     ],
     immediatelyRender: false,
     content: objective?.content ?? { type: "doc", content: [] },
+    editorProps: { transformPastedHTML: sanitizePastedHtml },
     onUpdate: ({ editor: e }) => {
       setObjective({ type: "objective", content: e.getJSON() });
     },

@@ -6,6 +6,7 @@ import StarterKit from "@tiptap/starter-kit";
 import type { JSONContent } from "@tiptap/react";
 import { Button, TextField, Label, Input } from "react-aria-components";
 import { useResumeStore } from "@/store/useResumeStore";
+import { sanitizePastedHtml } from "@/lib/sanitizePaste";
 import type { ProjectEntry } from "@/types/resume.types";
 
 const inputClass =
@@ -44,6 +45,7 @@ function ProjectEntryEditor({
     ],
     immediatelyRender: false,
     content: entry.bullets,
+    editorProps: { transformPastedHTML: sanitizePastedHtml },
     onUpdate: ({ editor: e }) => onChange({ ...entry, bullets: e.getJSON() }),
   });
 

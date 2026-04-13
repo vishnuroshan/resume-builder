@@ -6,6 +6,7 @@ import StarterKit from "@tiptap/starter-kit";
 import type { JSONContent } from "@tiptap/react";
 import { Button, TextField, Label, Input } from "react-aria-components";
 import { useResumeStore } from "@/store/useResumeStore";
+import { sanitizePastedHtml } from "@/lib/sanitizePaste";
 import type {
   CustomSection,
   CustomEntry,
@@ -60,6 +61,7 @@ function CustomBodyEditor({ bodyType, body, onChange }: BodyEditorProps) {
     ],
     immediatelyRender: false,
     content: body,
+    editorProps: { transformPastedHTML: sanitizePastedHtml },
     onUpdate: ({ editor: e }) => onChange(e.getJSON()),
   });
 

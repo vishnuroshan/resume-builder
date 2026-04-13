@@ -33,7 +33,7 @@
 
 - [x] User can click an "Undo" button to revert their last edit across any section.
 - [x] User can click a "Redo" button to re-apply an undone action.
-- [ ] User can trigger undo/redo using standard keyboard shortcuts (Ctrl+Z / Ctrl+Y).
+- [x] User can trigger undo/redo using standard keyboard shortcuts (Ctrl+Z / Ctrl+Y / Cmd+Z / Cmd+Shift+Z on Mac).
 - [ ] User is prompted with a warning if they attempt to close the tab with unsaved changes.
 - [ ] User can see a visual indicator confirming whether their current changes are saved or unsaved.
 - [ ] User's active session is temporarily cached so an accidental page refresh does not clear the document.
