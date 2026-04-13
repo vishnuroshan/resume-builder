@@ -4,9 +4,14 @@ import { connectToDatabase } from "@/lib/db";
 import type {
   ResumeDocument,
   ContactInfo,
-  WorkExperience,
-  Education,
-  ResumeHeader,
+  ExperienceProject,
+  ExperienceEntry,
+  EducationEntry,
+  SkillEntry,
+  ProjectEntry,
+  CertificationEntry,
+  CustomEntry,
+  CustomSection,
 } from "@/types/resume.types";
 
 // ─── Sub-schemas ──────────────────────────────────────────────────────────────
@@ -23,39 +28,86 @@ const ContactInfoSchema = new Schema<ContactInfo>(
   { _id: false },
 );
 
-const WorkExperienceSchema = new Schema<WorkExperience>(
+const ExperienceProjectSchema = new Schema<ExperienceProject>(
+  {
+    id: { type: String, required: true },
+    name: { type: String, default: null },
+    bullets: { type: Schema.Types.Mixed, required: true },
+  },
+  { _id: false },
+);
+
+const ExperienceEntrySchema = new Schema<ExperienceEntry>(
   {
     id: { type: String, required: true },
     company: { type: String, required: true },
-    title: { type: String, required: true },
-    location: { type: String, required: true },
-    startDate: { type: String, required: true },
-    // null = current/ongoing role
-    endDate: { type: String, default: null },
-    // Tiptap JSONContent is a free-form JSON object
-    description: { type: Schema.Types.Mixed, required: true },
-    highlights: [{ type: String }],
+    designation: { type: String, required: true },
+    startYear: { type: String, required: true },
+    endYear: { type: String, default: null },
+    bullets: { type: Schema.Types.Mixed, required: true },
+    projects: { type: [ExperienceProjectSchema], default: [] },
   },
   { _id: false },
 );
 
-const EducationSchema = new Schema<Education>(
+const EducationEntrySchema = new Schema<EducationEntry>(
   {
     id: { type: String, required: true },
     institution: { type: String, required: true },
-    degree: { type: String, required: true },
-    field: { type: String, required: true },
-    startDate: { type: String, required: true },
-    endDate: { type: String, required: true },
-    description: { type: Schema.Types.Mixed, required: true },
+    programme: { type: String, required: true },
+    startYear: { type: String, required: true },
+    endYear: { type: String, required: true },
+    description: { type: String },
   },
   { _id: false },
 );
 
-const ResumeHeaderSchema = new Schema<ResumeHeader>(
+const SkillEntrySchema = new Schema<SkillEntry>(
   {
-    contactInfo: { type: ContactInfoSchema, required: true },
-    summary: { type: Schema.Types.Mixed, required: true },
+    id: { type: String, required: true },
+    name: { type: String, required: true },
+    level: { type: Number, required: true, min: 0, max: 100 },
+  },
+  { _id: false },
+);
+
+const ProjectEntrySchema = new Schema<ProjectEntry>(
+  {
+    id: { type: String, required: true },
+    name: { type: String, required: true },
+    subtitle: { type: String },
+    bullets: { type: Schema.Types.Mixed, required: true },
+  },
+  { _id: false },
+);
+
+const CertificationEntrySchema = new Schema<CertificationEntry>(
+  {
+    id: { type: String, required: true },
+    name: { type: String, required: true },
+    issuer: { type: String },
+    year: { type: String },
+  },
+  { _id: false },
+);
+
+const CustomEntrySchema = new Schema<CustomEntry>(
+  {
+    id: { type: String, required: true },
+    title: { type: String },
+    subtitle: { type: String },
+    body: { type: Schema.Types.Mixed, required: true },
+  },
+  { _id: false },
+);
+
+const CustomSectionSchema = new Schema<CustomSection>(
+  {
+    id: { type: String, required: true },
+    type: { type: String, required: true, enum: ["custom"] },
+    sectionTitle: { type: String, required: true },
+    bodyType: { type: String, required: true, enum: ["bullets", "paragraphs"] },
+    entries: { type: [CustomEntrySchema], default: [] },
   },
   { _id: false },
 );
@@ -65,17 +117,19 @@ const ResumeHeaderSchema = new Schema<ResumeHeader>(
 const ResumeSchema = new Schema<ResumeDocument>(
   {
     id: { type: String, required: true, unique: true },
-    header: { type: ResumeHeaderSchema, required: true },
-    workExperiences: [WorkExperienceSchema],
-    educations: [EducationSchema],
+    contactInfo: { type: ContactInfoSchema, required: true },
+    objective: { type: Schema.Types.Mixed, required: true },
+    experience: { type: Schema.Types.Mixed, required: true },
+    education: { type: Schema.Types.Mixed, required: true },
+    skills: { type: Schema.Types.Mixed, required: true },
+    projects: { type: Schema.Types.Mixed, required: true },
+    certifications: { type: Schema.Types.Mixed, required: true },
+    customSections: { type: [CustomSectionSchema], default: [] },
   },
   { timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" } },
 );
 
 // ─── History trace plugin ─────────────────────────────────────────────────────
-// The plugin requires the active mongoose connection, which is available after
-// connectToDatabase() resolves. We wrap model registration in an async factory
-// so the connection is guaranteed to exist before the plugin is applied.
 
 let ResumeModel: Model<ResumeDocument> | null = null;
 
@@ -83,8 +137,6 @@ export async function getResumeModel(): Promise<Model<ResumeDocument>> {
   if (ResumeModel !== null) return ResumeModel;
 
   const conn = await connectToDatabase();
-
-  // Guard: only register the plugin once, before any model is compiled.
   const isAlreadyRegistered = "Resume" in conn.connection.models;
 
   if (!isAlreadyRegistered) {
@@ -94,7 +146,6 @@ export async function getResumeModel(): Promise<Model<ResumeDocument>> {
     });
   }
 
-  // Prevent model recompilation on Next.js HMR by reusing an existing model.
   ResumeModel =
     (conn.connection.models["Resume"] as Model<ResumeDocument> | undefined) ??
     conn.connection.model<ResumeDocument>("Resume", ResumeSchema);

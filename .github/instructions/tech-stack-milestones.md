@@ -2,65 +2,62 @@
 
 ## Milestone 1: Project Foundation & State Management
 
-- [ ] Initialize the Next.js application using `pnpm create next-app`.
-- [ ] Install all explicitly defined dependencies for state, editor, database, and UI.
-- [ ] Overwrite `app/globals.css` with the pastel `@theme` variables and strip out dark mode.
-- [ ] Update `tsconfig.json` to enforce `strict: true`.
-- [ ] Create `types/resume.types.ts` and define the strict interfaces for the resume document structure.
-- [ ] Create `store/useResumeStore.ts` and initialize the Zustand store using the defined types.
-- [ ] Integrate the `zundo` middleware into the Zustand store for session history tracking.
-- [ ] Write Zustand setter functions to enforce strict immutable state updates.
-- [ ] Create `lib/db.ts` to handle the MongoDB connection with global connection caching.
+- [x] Initialize the Next.js application using `pnpm create next-app`.
+- [x] Install all explicitly defined dependencies for state, editor, database, and UI.
+- [x] Overwrite `app/globals.css` with the `@theme` variables and base styles.
+- [x] Update `tsconfig.json` to enforce `strict: true`.
+- [x] Create `types/resume.types.ts` with strict interfaces for all section types: `ContactInfo`, `ObjectiveSection`, `ExperienceEntry`, `ExperienceProject`, `EducationEntry`, `SkillEntry`, `ProjectEntry`, `CertificationEntry`, `CustomSection`, `ResumeDocument`, and store shape types.
+- [x] Create `store/useResumeStore.ts` with Zustand and per-section setters (`setContactInfo`, `setObjective`, `setExperience`, `setEducation`, `setSkills`, `setProjects`, `setCertifications`, `setCustomSections`, `markDirty`, `markClean`).
+- [x] Export `initBlankDocument()` from the store to initialize a fresh `ResumeDocument` with `crypto.randomUUID()`.
+- [x] Integrate the `zundo` middleware and export `useTemporalStore` for undo/redo history.
+- [x] Create `lib/db.ts` to handle the MongoDB connection with global connection caching.
 - [ ] Set up environment variables locally to securely hold the MongoDB connection string.
 
 ## Milestone 2: Database Schema & Permanent Versioning
 
-- [ ] Create the `models` directory and define the `Resume.ts` Mongoose schema matching the TypeScript types.
-- [ ] Install and configure the `mongoose-history-trace` plugin inside the Resume model.
-- [ ] Create a Server Action or API route for fetching a user's list of past resume drafts.
-- [ ] Create a Server Action or API route for loading the exact state of a specific draft.
-- [ ] Create a Server Action or API route for processing manual saves.
+- [x] Create `models/Resume.ts` defining Mongoose sub-schemas for every section type mirroring the TypeScript interfaces.
+- [x] Configure the `mongoose-history-trace` plugin inside the Resume model for full document snapshot on save.
+- [ ] Create an API route for loading a specific saved draft into the editor state.
+- [ ] Create an API route for processing manual saves (POST/PUT).
 - [ ] Implement guard clauses at the top of all save routes to validate incoming JSON payloads.
-- [ ] Test the save endpoint to confirm it triggers the automatic creation of the `resume_history` collection.
-- [ ] Build a Server Component dashboard page to fetch and display the saved drafts.
+- [ ] Test the save endpoint to confirm it triggers the `resume_history` collection.
+- [ ] Build a Server Component dashboard page to fetch and render saved drafts.
 - [ ] Verify that all database fetching logic resides strictly within Server Components.
-- [ ] Refactor any complex validation logic from the API routes into isolated utility functions.
 
-## Milestone 3: The WYSIWYG Editor Integration
+## Milestone 3: Section-Based Editor Integration
 
-- [ ] Create `components/Editor/ResumeEditor.tsx` with the `'use client'` directive.
-- [ ] Initialize the Tiptap `useEditor` hook with the `StarterKit` extension.
-- [ ] Implement the synchronization logic to push Tiptap's `onUpdate` JSON directly to the Zustand store.
-- [ ] Build the base React Aria components for the editor toolbar (buttons, dropdowns).
-- [ ] Apply inline Tailwind utility classes to style the React Aria toolbar components.
-- [ ] Connect the UI undo/redo buttons directly to the `zundo` state methods.
-- [ ] Implement `sanitize-html` to clean any pasted content before it updates the editor state.
-- [ ] Wrap the `ResumeEditor` component in a React Error Boundary to prevent session crashes.
-- [ ] Extract toolbar action logic into explanatory variables rather than nesting logic inside click handlers.
-- [ ] Verify that Tiptap is only outputting semantic nodes (paragraphs, lists, headings) without inline styles.
+- [x] Create `components/Editor/ResumeEditor.tsx` as an orchestrator that calls `initBlankDocument()` and renders all section editors in fixed DOM order.
+- [x] Create `components/Editor/sections/ContactInfoEditor.tsx` — React Aria `TextField`/`Input` grid, calls `setContactInfo`.
+- [x] Create `components/Editor/sections/ObjectiveEditor.tsx` — Tiptap `useEditor` with headings and lists disabled via StarterKit config; undo/redo sync `useEffect`; calls `setObjective`.
+- [x] Create `components/Editor/sections/ExperienceEditor.tsx` — `useBulletEditor` custom hook, `ProjectSubEditor` sub-component, per-entry bullet editors, add/remove entries and project sub-sections; `endYear: null` toggle; calls `setExperience`.
+- [x] Create `components/Editor/sections/EducationEditor.tsx` — grid inputs, optional description, add/remove entries; calls `setEducation`.
+- [x] Create `components/Editor/sections/SkillsEditor.tsx` — `range` input + number input fallback; `handleLevelChange` guard; calls `setSkills`.
+- [x] Create `components/Editor/sections/ProjectsEditor.tsx` — per-entry Tiptap bullet editors with undo/redo sync; calls `setProjects`.
+- [x] Create `components/Editor/sections/CertificationsEditor.tsx` — 3-col grid inputs, add/remove entries; calls `setCertifications`.
+- [x] Create `components/Editor/sections/CustomSectionEditor.tsx` — `CustomBodyEditor` with bodyType-conditional StarterKit config; `bodyType` toggle (bullets/paragraphs); add/remove sections and entries; calls `setCustomSections`.
+- [x] Simplify `components/Editor/EditorToolbar.tsx` to only undo/redo; `onUndo`/`onRedo` props; `canUndo`/`canRedo` from `useTemporalStore`.
+- [x] Wrap `ResumeEditor` in `EditorErrorBoundary` (class component) to prevent full app crash.
+- [ ] Add `sanitize-html` paste handlers to each Tiptap section editor to clean external content on paste.
+- [ ] Add keyboard shortcuts (Ctrl+Z / Ctrl+Y) wired to `useTemporalStore` undo/redo.
 
-## Milestone 4: Live Preview & Semantic Layout
+## Milestone 4: Live Preview & ATS Compliance
 
-- [ ] Create `components/Preview/ResumePreview.tsx` with the `'use client'` directive.
-- [ ] Connect the preview component to read from the live Zustand store.
-- [ ] Map the Zustand JSON data strictly to semantic HTML tags (`<h1>`, `<h2>`, `<ul>`, `<li>`).
-- [ ] Enforce a linear DOM source order (Header first, then Experience, then Education).
-- [ ] Construct visual layouts (e.g., sidebars or columns) using only Tailwind Grid or Flexbox utilities.
-- [ ] Ensure visual styling never alters the natural top-to-bottom HTML reading order.
-- [ ] Test the real-time preview rendering speed while typing in the Tiptap editor.
-- [ ] Apply the custom pastel theme variables to the preview layout using inline Tailwind.
-- [ ] Abstract complex data mapping operations out of the main React render block into separate functions.
-- [ ] Test keyboard navigation through the generated preview to ensure React Aria accessibility is intact.
+- [x] Create `components/Preview/ResumePreview.tsx` with one sub-component per section type.
+- [x] Render sections in strict fixed DOM order matching the editor section order.
+- [x] Render Skills as `<span>SkillName</span><span>N%</span>` text in the DOM alongside a CSS-only `div` bar — never `<progress>`.
+- [x] Use stable `PARAGRAPH_EXTENSIONS` and `BULLET_EXTENSIONS` module-level constants; `toHtml()` pure utility for Tiptap JSON → HTML.
+- [x] Render `null` for sections with empty entries to avoid blank section headers in the preview.
+- [ ] Add a hidden Next.js SSR route (`app/resume/print/[id]/page.tsx`) that renders the resume as pure HTML/CSS without editor UI.
+- [ ] Verify that `pdf-parse` can extract all text from the generated HTML in correct section order.
+- [ ] Confirm Skills text (name + level) is present in the extracted `pdf-parse` output.
 
 ## Milestone 5: PDF Engine & ATS Validation
 
-- [ ] Create the hidden Next.js SSR route (`app/resume/print/[id]/page.tsx`).
-- [ ] Configure the hidden route to fetch draft data directly from MongoDB on the server.
-- [ ] Render the pure HTML/CSS preview component on this route without any editor UI wrappers.
+- [ ] Create the hidden print route for PDF rendering.
 - [ ] Create `lib/pdfService.ts` to isolate all Puppeteer initialization and capture logic.
-- [ ] Write the Puppeteer script to target the hidden route and utilize `page.pdf()` for generation.
-- [ ] Create the client-facing API endpoint that triggers the PDF generation and returns the file buffer.
-- [ ] Integrate `pdf-parse` into the generation endpoint to read the newly created PDF buffer.
-- [ ] Write an internal ATS check that compares the parsed text output against the expected document structure.
-- [ ] Handle Puppeteer timeout or memory errors cleanly using early returns and proper error responses.
-- [ ] Write the Dockerfile configuration to package the Next.js build alongside the required headless browser binaries.
+- [ ] Write the Puppeteer script to target the hidden route and use `page.pdf()` for generation.
+- [ ] Create the client-facing API endpoint that triggers PDF generation and returns the file buffer.
+- [ ] Integrate `pdf-parse` to run an ATS check on the generated PDF buffer.
+- [ ] Return a structured ATS result (pass/fail + extracted text) to the client.
+- [ ] Handle Puppeteer timeout/memory errors cleanly with early returns and proper error responses.
+- [ ] Write the Dockerfile to package the Next.js build with the required headless browser binaries.
